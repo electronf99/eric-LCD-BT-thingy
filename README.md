@@ -37,6 +37,17 @@ Values are the LCD text you want and allows you to turn the backlight on or off.
 
 Power on the ESP and then run sender/ericBLESender.py on the pc.
 
+```
+usage: ericBLESender.py [-h] [--debug] [--backlight-off]
+
+Eric LCD BLE Sender
+
+options:
+  -h, --help       show this help message and exit
+  --debug          Turn on debug
+  --backlight-off  Turn off Backlight by default
+```
+
 It should eventually connect and start sending data.
 
 >I write and test code inside vscode however you can connect to the esp using mpremote to upload file, run a > file and connect to watch the running code or access the REPL.

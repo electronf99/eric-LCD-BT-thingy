@@ -6,6 +6,7 @@ import sys
 import os
 import psutil
 from datetime import datetime
+import argparse
 
 # --------------------------------------------------------------------
 # HARD-CODED PARAMETERS — EDIT THESE
@@ -20,8 +21,11 @@ RX_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  # write
 TX_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # notify
 # --------------------------------------------------------------------
 
-async def send(client, payload: bytes):
-    print(f"Sending {len(payload)} bytes:", repr(payload))
+async def send(client, payload: bytes, debug):
+    
+    if debug:
+        print(f"Sending {len(payload)} bytes:", repr(payload))
+
     try:
         # Write with response to keep ordering/flow control simple
         await client.write_gatt_char(RX_UUID, payload, response=True)
@@ -82,7 +86,7 @@ def get_uptime():
     return f"{days} {hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-async def main():
+async def main(backlight_off, debug):
     # Fast path: use known MAC to avoid scanning entirely
     if DEVICE_ADDRESS:
         class _Stub:  # lightweight stub with .address
@@ -101,8 +105,12 @@ async def main():
             print("Failed to connect.")
             return
         print("Connected!")
+        if backlight_off:
+            backlight= "off"
+        else:
+            backlight = "on"
 
-        data = {"LCD0": "", "LCD1": "", "BL": "on"}
+        data = {"LCD0": "", "LCD1": "", "BL": backlight}
 
         tick = 0
         i = 0
@@ -123,12 +131,21 @@ async def main():
             data["LCD1"] = f"{datetime.now().strftime('%H:%M:%S')} CPU:{cpu:2.0f}%"[:16]
 
             payload = json.dumps(data).encode("utf-8")
-            await send(client, payload)
+            await send(client, payload, debug)
             await asyncio.sleep(0.05)  # modest pacing; adjust as needed
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Eric LCD BLE Sender")
+    parser.add_argument("--debug", action='store_true',
+                        help="Turn on debug")
+    parser.add_argument("--backlight-off", action='store_true',
+                        help="Turn off Backlight by default")
+
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(args.backlight_off, args.debug))
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
         sys.exit(1)
