@@ -64,7 +64,7 @@ def on_disconnect(conn_handle: int):
     print("Disconnected")
     lcd.clear()
     lcd.move_to(0,0)
-    lcd.putstr(f"{adv_name}")
+    lcd.putstr(f"bt: {adv_name}")
 
 
 
