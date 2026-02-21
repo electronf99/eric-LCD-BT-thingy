@@ -102,7 +102,7 @@ async def main():
             return
         print("Connected!")
 
-        data = {"LCD0": "", "LCD1": "", "BL": "off"}
+        data = {"LCD0": "", "LCD1": "", "BL": "on"}
 
         tick = 0
         i = 0
