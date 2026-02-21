@@ -3,6 +3,8 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import json
 import sys
+from datetime import datetime
+
 
 # --------------------------------------------------------------------
 # HARD‑CODED PARAMETERS — EDIT THESE
@@ -25,7 +27,7 @@ async def send(client, payload: bytes):
         sys.exit()
     
     # Give ESP32 time to notify back
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.05)
     try:
         await client.stop_notify(TX_UUID)
     except Exception:
@@ -41,6 +43,10 @@ async def find_device_by_name(name):
     print("Device not found.")
     return None
 
+#################
+## Main
+#################
+
 async def main():
     device = await find_device_by_name(DEVICE_NAME)
     if not device:
@@ -55,25 +61,35 @@ async def main():
             return
         print("Connected!")
 
-        # # Notifications callback
-        # def on_notify(_, data: bytearray):
-        #     try:
-        #         print("Notify:", data.decode("utf-8"))
-        #     except Exception:
-        #         print("Notify bytes:", bytes(data))
-
-        # await client.start_notify(TX_UUID, on_notify)
-
-        data = {"LCD0": "", "LCD1": ""}
+        data = {"LCD0": "", "LCD1": "", "BL" : "on"}
         loop_count = 0
 
+        s = "Hello Eric.. https://github.com/electronf99/eric-LCD-BT-thingy "  # A 16-character string (representing 16 bytes)
+        i = 0
+        #
+        # Do Stuff Here..
+        #
+
         while True:
-            data["LCD0"] = str(loop_count)
+
             data_string = json.dumps(data)
             payload = data_string.encode("utf-8")
-            await send(client, payload)
-            loop_count += 1
+            
+            # No need to throttle, ble class send takes care  of that
+            i += 1
+            if i == len(s):
+                i=0
+            rotated_string = s[i:] + s[:i]  # Slice and concatenate
+            print(rotated_string)
+            data["LCD0"] = rotated_string[:16]
 
+            now = datetime.now().strftime("%H:%M:%S")
+            data["LCD1"] = now
+
+            await send(client, payload)
+            
+            loop_count += 1
+            
 
 if __name__ == "__main__":
     try:

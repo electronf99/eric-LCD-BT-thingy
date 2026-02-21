@@ -56,7 +56,7 @@ def on_receive(rx: bytes, conn_handle: int):
 
 # ble disconnect callback function
 def on_disconnect(conn_handle: int):
-    print("Display: Disconnected")
+    print("Disconnected")
     lcd.clear()
     lcd.move_to(0,0)
     lcd.putstr(f"{adv_name}")
