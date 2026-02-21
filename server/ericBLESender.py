@@ -15,8 +15,15 @@ TX_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # notify
 # --------------------------------------------------------------------
 
 async def send(client, payload: bytes):
+    
     print(f"Sending {len(payload)} bytes:", repr(payload))
-    await client.write_gatt_char(RX_UUID, payload, response=True)
+    try:
+        await client.write_gatt_char(RX_UUID, payload, response=True)
+    except Exception as e:
+        print(e)
+        print("exiting")
+        sys.exit()
+    
     # Give ESP32 time to notify back
     await asyncio.sleep(0.1)
     try:
@@ -26,7 +33,7 @@ async def send(client, payload: bytes):
 
 async def find_device_by_name(name):
     print(f"Scanning for device named '{name}'...")
-    devices = await BleakScanner.discover(timeout=15)
+    devices = await BleakScanner.discover(timeout=25)
     for d in devices:
         if d.name == name:
             print(f"Found device: {d.name} [{d.address}]")
@@ -48,19 +55,18 @@ async def main():
             return
         print("Connected!")
 
-        # Notifications callback
-        def on_notify(_, data: bytearray):
-            try:
-                print("Notify:", data.decode("utf-8"))
-            except Exception:
-                print("Notify bytes:", bytes(data))
+        # # Notifications callback
+        # def on_notify(_, data: bytearray):
+        #     try:
+        #         print("Notify:", data.decode("utf-8"))
+        #     except Exception:
+        #         print("Notify bytes:", bytes(data))
 
-        await client.start_notify(TX_UUID, on_notify)
+        # await client.start_notify(TX_UUID, on_notify)
 
         data = {"LCD0": "", "LCD1": ""}
-
-
         loop_count = 0
+
         while True:
             data["LCD0"] = str(loop_count)
             data_string = json.dumps(data)
@@ -73,6 +79,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        # Ctrl-C during setup/teardown
         print("\nInterrupted by user.")
         sys.exit(1)

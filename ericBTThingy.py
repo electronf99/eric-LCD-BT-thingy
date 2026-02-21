@@ -1,4 +1,3 @@
-# main.py — start the BLE UART with ericbt-<3char> name
 import time
 from ble_uart import BLEUART
 from machine import Pin, SoftI2C
@@ -10,14 +9,19 @@ I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
 
+# To hold the caluclated unique BT device name
 adv_name = ""
+
+# Setup I2C LCD device
 
 i2c = SoftI2C(scl=Pin(8), sda=Pin(7), freq=500_000)
 lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
-lcd.backlight_off()
+lcd.backlight_on()
 lcd.clear()
 lcd.move_to(0,0)
 
+
+# Update display outside of recv callback
 def update_display(data):
 
     print(data)
@@ -38,6 +42,7 @@ def update_display(data):
 
     
 
+# recieve data callback funcion
 def on_receive(rx: bytes, conn_handle: int):
 
     data = {}
@@ -49,22 +54,21 @@ def on_receive(rx: bytes, conn_handle: int):
     return ("OK:" + text).encode()
 
 
+# ble disconnect callback function
 def on_disconnect(conn_handle: int):
-    print("Display: Disconnectcccced")
+    print("Display: Disconnected")
     lcd.clear()
     lcd.move_to(0,0)
     lcd.putstr(f"{adv_name}")
     
 
-
-
-
+## Setup and advertise. Set disconnect and recieve callbacks.
+## Main loop
 def main():
     
     global adv_name
     
     ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
-    
     adv_name = ble.adv_name
 
     ble.set_on_disconnect(on_disconnect)
