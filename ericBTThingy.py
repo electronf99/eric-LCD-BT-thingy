@@ -11,6 +11,7 @@ I2C_NUM_COLS = 16
 
 # To hold the caluclated unique BT device name
 adv_name = ""
+connected = False
 
 # Setup I2C LCD device
 
@@ -32,7 +33,7 @@ def update_display(data):
         else:
             lcd.backlight_on()
 
-    lcd.clear()
+    #lcd.clear()
     if "LCD0" in data:
         lcd.move_to(0,0)
         lcd.putstr(data["LCD0"])
@@ -56,11 +57,25 @@ def on_receive(rx: bytes, conn_handle: int):
 
 # ble disconnect callback function
 def on_disconnect(conn_handle: int):
+
+    global connected
+    connected = False
+
     print("Disconnected")
     lcd.clear()
     lcd.move_to(0,0)
     lcd.putstr(f"{adv_name}")
-    
+
+
+
+def on_connect(conn_handle: int):
+    global connected
+    connected = True
+    # Optional: brief status flash
+    lcd.clear()
+    lcd.move_to(0, 0)
+    lcd.putstr("Connected")
+
 
 ## Setup and advertise. Set disconnect and recieve callbacks.
 ## Main loop
@@ -71,14 +86,23 @@ def main():
     ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
     adv_name = ble.adv_name
 
+    ble.set_on_connect(on_connect)
     ble.set_on_disconnect(on_disconnect)
     ble.set_on_receive(on_receive)
     
     lcd.clear()
-    lcd.putstr(f"{adv_name}")
+    lcd.putstr(f"Wait {adv_name}")
     
+    s = "https://github.com/electronf99/eric-LCD-BT-thingy "
+    i = 0
+
     while True:
         time.sleep_ms(200)
+        if not connected:
+            i = (i + 1) % len(s)
+            rotated = s[i:] + s[:i]
+            lcd.move_to(0,1)
+            lcd.putstr(rotated[:16])
 
 if __name__ == "__main__":
     main()

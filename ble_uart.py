@@ -199,7 +199,7 @@ class BLEUART:
                     self.notify(b"OK:" + incoming, conn_handle)
 
     # -------- Advertising helpers --------
-    def _advertise(self, interval_us=100_000):
+    def _advertise(self, interval_us=30_000):
         self.advertise_stop()
         try:
             if self._resp:

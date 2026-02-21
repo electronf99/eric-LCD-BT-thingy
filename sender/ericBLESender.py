@@ -3,56 +3,97 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import json
 import sys
+import os
+import psutil
 from datetime import datetime
 
-
 # --------------------------------------------------------------------
-# HARD‑CODED PARAMETERS — EDIT THESE
+# HARD-CODED PARAMETERS — EDIT THESE
 # --------------------------------------------------------------------
-DEVICE_NAME = "ericbt-04Ws"   # <-- CHANGE TO MATCH YOUR ESP32 name
+DEVICE_NAME = "ericbt-04Ws"   # Your peripheral's advertised name
+# If you set this, scanning is skipped entirely:
+DEVICE_ADDRESS = None         # e.g. "AA:BB:CC:DD:EE:FF"
 
-# Nordic UART Service UUIDs (must match your ESP32 MicroPython code)
+# Nordic UART Service UUIDs (must match your peripheral)
+NUS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 RX_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  # write
 TX_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  # notify
 # --------------------------------------------------------------------
 
 async def send(client, payload: bytes):
-    
     print(f"Sending {len(payload)} bytes:", repr(payload))
     try:
+        # Write with response to keep ordering/flow control simple
         await client.write_gatt_char(RX_UUID, payload, response=True)
     except Exception as e:
-        print(e)
-        print("exiting")
-        sys.exit()
-    
-    # Give ESP32 time to notify back
-    await asyncio.sleep(0.05)
+        print("Write failed:", e)
+        sys.exit(1)
+
+async def find_device_fast(name: str, service_uuid: str, timeout: float = 5.0):
+    """
+    Active scan + callback; stop as soon as we see a matching UUID or name.
+    Returns a Bleak device or None.
+    """
+    found = {"dev": None}
+
+    def on_adv(device, adv_data):
+        # Prefer UUID match (fast, unambiguous)
+        uuids = {u.lower() for u in (adv_data.service_uuids or [])}
+        if service_uuid.lower() in uuids:
+            found["dev"] = device
+            return
+        # Fallback: match by local name if present
+        if adv_data.local_name == name:
+            found["dev"] = device
+
+    scanner = BleakScanner(
+        detection_callback=on_adv,
+        service_uuids=[service_uuid],   # Helps BlueZ match early
+        scanning_mode="active"          # Request scan response (faster metadata)
+    )
+
+    await scanner.start()
     try:
-        await client.stop_notify(TX_UUID)
-    except Exception:
-        pass
+        t0 = asyncio.get_running_loop().time()
+        while found["dev"] is None and (asyncio.get_running_loop().time() - t0) < timeout:
+            await asyncio.sleep(0.05)
+    finally:
+        await scanner.stop()
 
-async def find_device_by_name(name):
-    print(f"Scanning for device named '{name}'...")
-    devices = await BleakScanner.discover(timeout=25)
-    for d in devices:
-        if d.name == name:
-            print(f"Found device: {d.name} [{d.address}]")
-            return d
-    print("Device not found.")
-    return None
+    if found["dev"]:
+        print(f"Found device: {found['dev'].name} [{found['dev'].address}]")
+    else:
+        print("Device not found within timeout.")
+    return found["dev"]
 
-#################
-## Main
-#################
+def get_uptime():
+
+    boot = datetime.fromtimestamp(psutil.boot_time())
+    delta = datetime.now() - boot
+
+    # Extract parts
+    days = delta.days
+    seconds = delta.seconds
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    return f"{days} {hours:02d}:{minutes:02d}:{seconds:02d}"
+
 
 async def main():
-    device = await find_device_by_name(DEVICE_NAME)
-    if not device:
-        return
-    
-    await asyncio.sleep(0.5)
+    # Fast path: use known MAC to avoid scanning entirely
+    if DEVICE_ADDRESS:
+        class _Stub:  # lightweight stub with .address
+            def __init__(self, address): self.address = address
+        device = _Stub(DEVICE_ADDRESS)
+    else:
+        device = await find_device_fast(DEVICE_NAME, NUS_SERVICE_UUID, timeout=5.0)
+        if not device:
+            return
+
+    await asyncio.sleep(0.1)  # small settle delay
 
     print("Connecting...")
     async with BleakClient(device.address) as client:
@@ -61,35 +102,29 @@ async def main():
             return
         print("Connected!")
 
-        data = {"LCD0": "", "LCD1": "", "BL" : "on"}
-        loop_count = 0
+        data = {"LCD0": "", "LCD1": "", "BL": "off"}
 
-        s = "Hello Eric.. https://github.com/electronf99/eric-LCD-BT-thingy "  # A 16-character string (representing 16 bytes)
+        tick = 0
         i = 0
-        #
-        # Do Stuff Here..
-        #
+        cpu = 0
 
         while True:
-
-            data_string = json.dumps(data)
-            payload = data_string.encode("utf-8")
             
-            # No need to throttle, ble class send takes care  of that
-            i += 1
-            if i == len(s):
-                i=0
-            rotated_string = s[i:] + s[:i]  # Slice and concatenate
-            print(rotated_string)
-            data["LCD0"] = rotated_string[:16]
+            
+            tick += 1
+            if tick % 5 == 0:
+                cpu  = psutil.cpu_percent()
+                
+            s = f"Load1: {os.getloadavg()[0]:.2f}      Uptime: {get_uptime()}     "
+            # rotate text for LCD0
+            i = (i + 1) % len(s)
+            rotated = s[i:] + s[:i]
+            data["LCD0"] = rotated[:16]
+            data["LCD1"] = f"{datetime.now().strftime('%H:%M:%S')} CPU:{cpu:2.0f}%"[:16]
 
-            now = datetime.now().strftime("%H:%M:%S")
-            data["LCD1"] = now
-
+            payload = json.dumps(data).encode("utf-8")
             await send(client, payload)
-            
-            loop_count += 1
-            
+            await asyncio.sleep(0.05)  # modest pacing; adjust as needed
 
 if __name__ == "__main__":
     try:
