@@ -1,6 +1,8 @@
 # BLE Thingy for Eric's Wacky LCD
 
-More stuff built with things laying aroud
+More stuff built with things laying around (including some of the code)
+
+The code is mostly a combination of code used in other projects and stuff written by copilot.
 
 ## Eric's not quite right jumbo LCD1602 with BL pins at the wrong end.
 
