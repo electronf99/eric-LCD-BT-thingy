@@ -21,20 +21,29 @@ Upload the following files to the esp:
 
 Upload ericBTThingy to the esp32 (as main.py if you want it to autostart)
 
-## PC Python BLE sender
+## PC Python BLE senderS
 
 On the pc end:
 * install bluetooth stuff if not already
 * install bleak (pip3 install bleak)
 
+The sender code sends a dict like this:
+
+```
+{"LCD0": "", "LCD1": "", "BL" : "on"}
+```
+
+Values are the LCD text you want and allows you to turn the backlight on or off.
+
 Power on the ESP and then run sender/ericBLESender.py on the pc.
 
 It should eventually connect and start sending data.
 
-I write and test code inside vscode however you can connect to the esp using mpremote to upload file, run a file and connect to watch the running code or access the REPL.
+>I write and test code inside vscode however you can connect to the esp using mpremote to upload file, run a > file and connect to watch the running code or access the REPL.
+
 
 ## Threaded Collector
 
-You could add a threaded collector to the python on the PC to collect data in the background and have the main code retrieve it's values from there.
+Other stuff like this I have uses a threaded collector in the python on the PC to collect data in the background (eg from a router) and have the main code retrieve it's values from there.
 
 

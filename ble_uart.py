@@ -1,4 +1,6 @@
 # ble_uart.py — ESP32 MicroPython BLE UART service with 4-char MAC-based suffix
+# This is code mostly generateed by Copilot
+
 import bluetooth
 import struct
 import time
