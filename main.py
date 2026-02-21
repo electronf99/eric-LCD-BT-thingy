@@ -82,6 +82,8 @@ def on_connect(conn_handle: int):
 def main():
     
     global adv_name
+
+    time.sleep(1)
     
     ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
     adv_name = ble.adv_name
@@ -89,9 +91,12 @@ def main():
     ble.set_on_connect(on_connect)
     ble.set_on_disconnect(on_disconnect)
     ble.set_on_receive(on_receive)
+
+    time.sleep(1)
+
     
     lcd.clear()
-    lcd.putstr(f"Wait {adv_name}")
+    lcd.putstr(f"bt: {adv_name}")
     
     s = "https://github.com/electronf99/eric-LCD-BT-thingy "
     i = 0
@@ -103,6 +108,7 @@ def main():
             rotated = s[i:] + s[:i]
             lcd.move_to(0,1)
             lcd.putstr(rotated[:16])
+
 
 if __name__ == "__main__":
     main()
