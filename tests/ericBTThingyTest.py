@@ -7,10 +7,11 @@ import bluetooth
 I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
-
+i=0
 # Initialize I2C and LCD objects
 i2c = SoftI2C(scl=Pin(8), sda=Pin(7), freq=500_000)
 lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
+lcd.backlight_off()
 
 ble = bluetooth.BLE()
 ble.active(True)
@@ -25,7 +26,8 @@ sleep(4)
 
 try:
     while True:
-
+        print(f"{i} {btmac}")
+        i+=1
         sleep(2)
 
 except KeyboardInterrupt:
