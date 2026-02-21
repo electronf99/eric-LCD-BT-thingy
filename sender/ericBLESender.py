@@ -28,7 +28,7 @@ async def send(client, payload: bytes, debug):
 
     try:
         # Write with response to keep ordering/flow control simple
-        await client.write_gatt_char(RX_UUID, payload, response=True)
+        await client.write_gatt_char(RX_UUID, payload, response=False)
     except Exception as e:
         print("Write failed:", e)
         sys.exit(1)
@@ -113,7 +113,6 @@ async def main(backlight_off, debug):
         data = {"LCD0": "", "LCD1": "", "BL": backlight}
 
         tick = 0
-        i = 0
         cpu = 0
 
         while True:
@@ -123,16 +122,12 @@ async def main(backlight_off, debug):
             if tick % 5 == 0:
                 cpu  = psutil.cpu_percent()
                 
-            s = f"Load1: {os.getloadavg()[0]:.2f}      Uptime: {get_uptime()}     "
-            # rotate text for LCD0
-            i = (i + 1) % len(s)
-            rotated = s[i:] + s[:i]
-            data["LCD0"] = rotated[:16]
-            data["LCD1"] = f"{datetime.now().strftime('%H:%M:%S')} CPU:{cpu:2.0f}%"[:16]
+            data["LCD0"] = f"L1:{os.getloadavg()[0]:.2f} CPU:{cpu:2.0f}%    "[:16]
+            data["LCD1"] = f"UP:{get_uptime()}     "[:16]
 
             payload = json.dumps(data).encode("utf-8")
             await send(client, payload, debug)
-            await asyncio.sleep(0.05)  # modest pacing; adjust as needed
+            await asyncio.sleep(0.5)
 
 if __name__ == "__main__":
 

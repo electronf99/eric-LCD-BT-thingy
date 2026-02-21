@@ -3,6 +3,7 @@ from ble_uart import BLEUART
 from machine import Pin, SoftI2C
 from pico_i2c_lcd import I2cLcd
 import json
+from custom_char import get_arrow_chars
 
 # Define the LCD I2C address and dimensions
 I2C_ADDR = 0x27
@@ -21,10 +22,12 @@ lcd.backlight_on()
 lcd.clear()
 lcd.move_to(0,0)
 
+arrow = 0
 
 # Update display outside of recv callback
 def update_display(data):
 
+    global arrow
     print(data)
     
     if "BL" in data:
@@ -39,7 +42,13 @@ def update_display(data):
         lcd.putstr(data["LCD0"])
     if "LCD1" in data:
         lcd.move_to(0,1)
-        lcd.putstr(data["LCD1"])
+        lcd.putstr(data["LCD1"][:15])
+    
+    lcd.move_to(15,1)
+    lcd.putchar(chr(arrow))
+    arrow += 1
+    if arrow == 8:
+        arrow = 0
 
     
 
@@ -82,7 +91,12 @@ def on_connect(conn_handle: int):
 def main():
     
     global adv_name
-
+    
+    # Load the arrow char
+    custom = get_arrow_chars()
+    for idx, custom_char in enumerate(custom):
+        lcd.custom_char(idx, custom_char)
+    
     time.sleep(1)
     
     ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
@@ -102,7 +116,7 @@ def main():
     i = 0
 
     while True:
-        time.sleep_ms(200)
+        time.sleep_ms(500)
         if not connected:
             i = (i + 1) % len(s)
             rotated = s[i:] + s[:i]
