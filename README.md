@@ -1,6 +1,10 @@
 # BLE Thingy for Eric's Wacky LCD
 
-More stuff built with things laying around (including some of the code)
+More stuff built with things laying around (including some of the code).
+
+I used the wierd jumbo LCD, one of the many LCD I2C piggybacks laying around and a mini waveshare esp32 I had in my box of development boards. 
+* Had to cut pins 15 and 16 off the piggyback and were those pins beck to the other end of the LCD pins.
+* Wired thge esp to the piggyback and glued the ESP to the back of the LCD.
 
 The code is mostly a combination of code used in other projects and stuff written by copilot.
 
@@ -15,7 +19,7 @@ Upload the following files to the esp:
 * pico_i2c_lcd.py
 * lcd_api.py
 
-Upload ericBTThingy to the esp32 (as main if you want it to autostart)
+Upload ericBTThingy to the esp32 (as main.py if you want it to autostart)
 
 ## PC Python BLE sender
 
@@ -31,6 +35,6 @@ I write and test code inside vscode however you can connect to the esp using mpr
 
 ## Threaded Collector
 
-YOu could add a threaded collector to the python on the PC to collect data in the background and have the main code retrieve it's values from there.
+You could add a threaded collector to the python on the PC to collect data in the background and have the main code retrieve it's values from there.
 
 
