@@ -10,6 +10,8 @@ I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
 
+adv_name = ""
+
 i2c = SoftI2C(scl=Pin(8), sda=Pin(7), freq=500_000)
 lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 lcd.backlight_off()
@@ -47,15 +49,31 @@ def on_receive(rx: bytes, conn_handle: int):
     return ("OK:" + text).encode()
 
 
-def main():
-    ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
-
-    ble.set_on_receive(on_receive)
+def on_disconnect(conn_handle: int):
+    print("Display: Disconnectcccced")
     lcd.clear()
-    lcd.putstr(ble.adv_name)
+    lcd.move_to(0,0)
+    lcd.putstr(f"{adv_name}")
+    
+
+
+
+
+def main():
+    
+    global adv_name
+    
+    ble = BLEUART(base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True)
+    
+    adv_name = ble.adv_name
+
+    ble.set_on_disconnect(on_disconnect)
+    ble.set_on_receive(on_receive)
+    
+    lcd.clear()
+    lcd.putstr(f"{adv_name}")
     
     while True:
-        # Your application logic can go here
         time.sleep_ms(200)
 
 if __name__ == "__main__":

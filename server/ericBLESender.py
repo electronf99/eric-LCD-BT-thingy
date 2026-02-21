@@ -2,6 +2,7 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
 import json
+import sys
 
 # --------------------------------------------------------------------
 # HARD‑CODED PARAMETERS — EDIT THESE
@@ -22,7 +23,6 @@ async def send(client, payload: bytes):
         await client.stop_notify(TX_UUID)
     except Exception:
         pass
-    print("Done.")
 
 async def find_device_by_name(name):
     print(f"Scanning for device named '{name}'...")
@@ -68,5 +68,11 @@ async def main():
             await send(client, payload)
             loop_count += 1
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        # Ctrl-C during setup/teardown
+        print("\nInterrupted by user.")
+        sys.exit(1)

@@ -1,4 +1,4 @@
-# ble_uart.py — ESP32 MicroPython BLE UART with on_receive callback
+# ble_uart.py — ESP32 MicroPython BLE UART service with 4-char MAC-based suffix
 import bluetooth
 import struct
 import time
@@ -43,7 +43,7 @@ def _pad_left_zeros(s: str, width: int) -> str:
 
 def _make_suffix_from_mac(mac: bytes) -> str:
     if not isinstance(mac, (bytes, bytearray)) or len(mac) < 2:
-        return "000"
+        return "0000"
     last2 = (int(mac[-2]) << 8) | int(mac[-1])
     return _pad_left_zeros(_u16_to_base62(last2), 4)
 
@@ -52,18 +52,21 @@ class BLEUART:
     BLE UART-like service:
       - TX characteristic: Notify + Read (ESP32 -> client)
       - RX characteristic: Write (+ Write Without Response) (client -> ESP32)
-    Advertises as 'ericbt-<3char>'.
+    Advertises as 'ericbt-<4char>'.
     """
-    def __init__(self, base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True):
+    def __init__(self, base_name="ericbt", include_uuid_in_scan_resp=True, addr_public=True,
+                 rx_buf_size=128):
         self._ble = bluetooth.BLE()
         self._ble.active(True)
 
+        # Prefer a public address
         if addr_public:
             try:
                 self._ble.config(addr_mode=bluetooth.ADDR_PUBLIC)
             except Exception:
                 pass
 
+        # BLE MAC (port dependent)
         mac = None
         try:
             mac_val = self._ble.config("mac")
@@ -83,6 +86,7 @@ class BLEUART:
 
         suffix = _make_suffix_from_mac(mac)
         adv_name = "{}-{}".format(base_name, suffix)
+        self.adv_name = adv_name
 
         self._ble.irq(self._irq)
 
@@ -92,24 +96,22 @@ class BLEUART:
         self._service = (_UART_SERVICE_UUID, (self._tx, self._rx))
         ((self._tx_handle, self._rx_handle),) = self._ble.gatts_register_services((self._service,))
 
-
-        # 1) Allow larger writes on the RX characteristic
+        # Allow larger writes & long writes
         try:
-            self._ble.gatts_set_buffer(self._rx_handle, 128, True)  # buffer size 128, allow long writes
+            self._ble.gatts_set_buffer(self._rx_handle, rx_buf_size, True)
         except AttributeError:
-            # Older builds may lack gatts_set_buffer; then you must rely on MTU and chunking
             pass
 
-        # 2) (Optional) Suggest a preferred MTU to the stack (not always supported)
+        # Prefer MTU (client still decides)
         try:
-            self._ble.config(mtu=128)   # This is "preferred"; the client still decides
+            self._ble.config(mtu=rx_buf_size)
         except Exception:
             pass
 
-
-
         self._connections = set()
-        self._on_receive = None  # <- user callback: def cb(data_bytes: bytes, conn_handle: int) -> Optional[bytes]
+        self._on_receive = None
+        self._on_connect = None          # NEW
+        self._on_disconnect = None       # NEW
 
         # Advertising payloads
         self._adv = self._build_adv_payload(name=adv_name)
@@ -121,19 +123,22 @@ class BLEUART:
             mac_str = ":".join("{:02X}".format(int(b)) for b in mac)
         except Exception:
             mac_str = "<unknown>"
-        self.adv_name = adv_name
         print("Advertising as:", adv_name)
         print("BLE MAC:", mac_str)
         print("TX handle:", self._tx_handle, "RX handle:", self._rx_handle)
 
-    # -------- API --------
+    # -------- Public API --------
     def set_on_receive(self, handler):
-        """
-        Register a receive callback.
-        handler(data_bytes: bytes, conn_handle: int) -> Optional[bytes]
-        Return bytes to auto-notify back; return None to send nothing.
-        """
+        """handler(data_bytes: bytes, conn_handle: int) -> Optional[bytes]"""
         self._on_receive = handler
+
+    def set_on_connect(self, handler):
+        """handler(conn_handle: int) -> None"""
+        self._on_connect = handler
+
+    def set_on_disconnect(self, handler):
+        """handler(conn_handle: int) -> None"""
+        self._on_disconnect = handler
 
     def notify(self, data: bytes, conn_handle: int = None):
         if conn_handle is None:
@@ -154,38 +159,44 @@ class BLEUART:
         except Exception:
             pass
 
-    # ------- IRQ --------
+    # -------- IRQ handler --------
     def _irq(self, event, data):
         if event == _IRQ_CENTRAL_CONNECT:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             print("Central connected:", conn_handle)
+            if self._on_connect:
+                try:
+                    self._on_connect(conn_handle)
+                except Exception as e:
+                    print("on_connect error:", e)
 
         elif event == _IRQ_CENTRAL_DISCONNECT:
             conn_handle, _, _ = data
             self._connections.discard(conn_handle)
             print("Central disconnected:", conn_handle)
+            if self._on_disconnect:
+                try:
+                    self._on_disconnect(conn_handle)
+                except Exception as e:
+                    print("on_disconnect error:", e)
             self._advertise()
 
         elif event == _IRQ_GATTS_WRITE:
             conn_handle, value_handle = data
             if value_handle == self._rx_handle:
                 incoming = self._ble.gatts_read(self._rx_handle)
-
-                # Call user handler if set
                 if self._on_receive:
                     try:
                         resp = self._on_receive(incoming, conn_handle)
                         if isinstance(resp, (bytes, bytearray)) and len(resp) > 0:
                             self.notify(resp, conn_handle)
                     except Exception as e:
-                        # Avoid crashing in IRQ; you can print minimal info
                         print("on_receive error:", e)
                 else:
-                    # Default echo OK
                     self.notify(b"OK:" + incoming, conn_handle)
 
-    # ------- Advertising helpers -------
+    # -------- Advertising helpers --------
     def _advertise(self, interval_us=500_000):
         self.advertise_stop()
         try:
