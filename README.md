@@ -63,29 +63,7 @@ It should eventually connect and start sending data.
 ## 📦 Dependencies & Installation
 
 Your Python BLE system requires a few system-level packages and Python libraries.  
-The following instructions cover **macOS** and **Linux (Ubuntu/Debian)**.
 
-### 🟦 macOS (10.15+)
-
-1) **Install Python 3**
-```bash
-brew install python3
-```
-
-2) **Install required Python packages**
-```bash
-python3 -m pip install --upgrade pip
-python3 -m pip install bleak psutil
-```
-
-3) **Grant Bluetooth access**  
-On first run, macOS will prompt:
-
-> “Terminal would like to use Bluetooth”
-
-Click **Allow**. If denied previously, re-enable in **System Settings → Privacy & Security → Bluetooth**.
-
----
 
 ### 🟩 Linux (Ubuntu/Debian)
 
@@ -138,7 +116,8 @@ python3 -m pip install bleak psutil
 
 ## Threaded Collector
 
-Other stuff like this I have uses a threaded collector in the python on the PC to collect data in the background (eg from a router) and have the main code retrieve it's values from there.
+For other stuff like this I have usds a threaded collector in the PC python code collect data in the background (eg from a router) and have the main code retrieve it's values from collector.
+
 
 
 
