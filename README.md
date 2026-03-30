@@ -12,6 +12,8 @@ On the PC end:
 
 clone repo and run sender/sender.py
 
+# Details
+
 I used the wierd jumbo LCD, one of the many LCD I2C piggybacks laying around and a mini waveshare esp32 I had in my box of development boards. 
 * Had to cut pins 15 and 16 off the piggyback and were those pins beck to the other end of the LCD pins.
 * Wired the esp to the piggyback and glued the ESP to the back of the LCD.
