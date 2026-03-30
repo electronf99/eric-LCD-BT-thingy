@@ -10,7 +10,15 @@ The code is mostly a combination of code used in other projects and stuff writte
 
 ## Eric's not quite right jumbo LCD1602 with BL pins at the wrong end.
 
-Using ESP32 Micropython and a PC based python sender
+TL;DR:
+
+On the PC end:
+uinstall bluetooth packages
+pip3 install bleak psutil
+
+clone repo and run sender/sender.py
+
+
 
 ## ESP32 Micropython BLE reciever
 
