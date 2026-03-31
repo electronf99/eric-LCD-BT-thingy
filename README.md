@@ -1,8 +1,8 @@
-## BLE Thingy for Eric's Wacky LCD
+## BLE Thingy for Eric's Wacky LCD 
 
 # If you are reading this then you are probabaly Eric.
 
-### Eric's not quite right jumbo LCD1602 with BL pins at the wrong end
+There is something not quite right about Eric's jumbo LCD1602. The BL pins at the wrong end meaning it becomes a heat source not a data source.
 
 More stuff built with things laying around (including some of the code).
 
