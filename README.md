@@ -11,8 +11,8 @@ More stuff built with things laying around (including some of the code).
 On the PC end:
 * install bluetooth packages
 * pip3 install bleak psutil
-
-clone repo and run sender/sender.py
+* clone repo, check the device name on the thingy and update and run sender/sender.py
+* run sender.py
 
 # Details
 
