@@ -1,10 +1,11 @@
 ## BLE Thingy for Eric's Wacky LCD 
 
+More stuff built with things laying around (including some of the code).
+
 # If you are reading this then you are probabaly Eric.
 
-There is something not quite right about Eric's jumbo LCD1602. The BL pins at the wrong end meaning it becomes a heat source not a data source.
+There is something not quite right about Eric's jumbo LCD1602. The BL pins are at the wrong end, meaning it becomes a heat source not a display device.
 
-More stuff built with things laying around (including some of the code).
 
 ## TL;DR:
 
@@ -17,7 +18,7 @@ On the PC end:
 # Details
 
 I used the wierd jumbo LCD, one of the many LCD I2C piggybacks laying around and a mini waveshare esp32 I had in my box of development boards. 
-* Had to cut pins 15 and 16 off the piggyback and were those pins beck to the other end of the LCD pins.
+* Had to cut pins 15 and 16 off the piggyback and wire those pins beck to the other end of the LCD pins.
 * Wired the esp to the piggyback and glued the ESP to the back of the LCD.
 
 The code is mostly a combination of code used in other projects and stuff written by copilot.
