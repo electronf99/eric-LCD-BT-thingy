@@ -1,6 +1,8 @@
-# BLE Thingy for Eric's Wacky LCD
+## BLE Thingy for Eric's Wacky LCD
 
-## Eric's not quite right jumbo LCD1602 with BL pins at the wrong end
+# If you are reading this then you are probabaly Eric.
+
+### Eric's not quite right jumbo LCD1602 with BL pins at the wrong end
 
 More stuff built with things laying around (including some of the code).
 
